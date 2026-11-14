@@ -1,0 +1,2052 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#020617">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Spirit Lan Center">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Spirit Lan Center | Control de Cabinas</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='88'%3E%F0%9F%90%8E%3C/text%3E%3C/svg%3E">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .animate-pulse-slow {
+            animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        html {
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+        button, input, select, textarea {
+            touch-action: manipulation;
+        }
+        body {
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+        @media (max-width: 1279px) {
+            .app-header {
+                flex-wrap: wrap;
+                gap: 0.75rem;
+            }
+            button, input, select, textarea {
+                min-height: 44px;
+            }
+            input, select, textarea {
+                font-size: 16px;
+            }
+        }
+        @media (max-width: 639px) {
+            body {
+                overflow-x: hidden;
+            }
+            .app-header {
+                padding: 0.75rem;
+                padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));
+            }
+            .app-header .app-title {
+                max-width: 48vw;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .modal-panel {
+                max-height: calc(100vh - 1rem);
+                overflow-y: auto;
+                overscroll-behavior: contain;
+            }
+            #salesTableBody,
+            #salesTableBody + * {
+                white-space: nowrap;
+            }
+            input, select, textarea {
+                font-size: 16px;
+                min-height: 44px;
+            }
+            button {
+                min-height: 44px;
+            }
+            .app-header {
+                padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+                padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+            }
+            .mobile-nav {
+                padding-left: max(0.5rem, env(safe-area-inset-left, 0px));
+                padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
+            }
+            main {
+                padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+                padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+                padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+            }
+        }
+        @supports (height: 100dvh) {
+            @media (max-width: 639px) {
+                .modal-panel {
+                    max-height: calc(100dvh - 2rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+                }
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans flex flex-col antialiased">
+
+    <!-- PANTALLA DE LOGIN -->
+    <div id="loginModal" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-cyan-500 to-indigo-500"></div>
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-cyan-500/10 text-cyan-400 mb-3 text-2xl font-bold border border-cyan-500/20">
+                    🐎
+                </div>
+                <h1 class="text-2xl font-black tracking-tight text-white">Spirit Lan Center</h1>
+                <p class="text-xs text-slate-400 mt-1">Sistema de Control de Cabinas y Cafetería</p>
+            </div>
+
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Usuario</label>
+                    <input type="text" id="loginUser" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 transition text-white" placeholder="Ej. admin o caja1">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Contraseña</label>
+                    <input type="password" id="loginPass" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 transition text-white" placeholder="••••••••">
+                </div>
+                
+                <div id="loginError" class="hidden text-rose-400 text-xs text-center font-medium bg-rose-500/10 py-2 rounded-lg border border-rose-500/20">
+                    Usuario o contraseña incorrectos
+                </div>
+
+                <button type="submit" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-3 px-4 rounded-xl transition shadow-lg shadow-cyan-500/20 text-sm">
+                    Iniciar Sesión
+                </button>
+            </form>
+
+            <div class="mt-6 pt-6 border-t border-slate-800 text-center">
+                <p class="text-xs text-slate-500 mb-2">Accesos rápidos de prueba:</p>
+                <div class="flex justify-center gap-2">
+                    <button type="button" onclick="fillLogin('admin', '1234')" class="text-xs bg-slate-800 hover:bg-slate-700 text-cyan-400 px-3 py-1.5 rounded-lg transition border border-slate-700">Admin (1234)</button>
+                    <button type="button" onclick="fillLogin('caja1', '1234')" class="text-xs bg-slate-800 hover:bg-slate-700 text-indigo-400 px-3 py-1.5 rounded-lg transition border border-slate-700">Trabajador (1234)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- APLICACIÓN PRINCIPAL -->
+    <div id="appContainer" class="hidden flex flex-col min-h-screen">
+        <!-- BARRA SUPERIOR -->
+        <header class="app-header bg-slate-900 border-b border-slate-800 sticky top-0 z-30 px-4 py-3 flex items-center justify-between shadow-md">
+            <div class="flex min-w-0 flex-1 items-center gap-3 xl:flex-none">
+                <span class="text-xl">🐎</span>
+                <div>
+                    <h1 class="app-title text-base font-bold text-white tracking-tight leading-none">Spirit Lan Center</h1>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span id="userBadge" class="text-[10px] bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded font-medium border border-cyan-500/20">Admin</span>
+                        <span class="text-[10px] text-slate-400" id="currentClock">00:00:00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NAVEGACIÓN TABS -->
+            <nav class="hidden xl:flex bg-slate-950 p-1 rounded-xl border border-slate-800">
+                <button onclick="switchTab('cabinas')" id="tabBtn-cabinas" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition bg-cyan-500 text-slate-950 shadow">Cabinas</button>
+                <button onclick="switchTab('cafeteria')" id="tabBtn-cafeteria" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-white">Cafetería & Snacks</button>
+                <button onclick="switchTab('caja')" id="tabBtn-caja" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-white">Caja e Historial</button>
+                <button onclick="switchTab('admin')" id="tabBtn-admin" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-white">Usuarios y Tarifas</button>
+            </nav>
+
+            <div class="flex shrink-0 items-center gap-2">
+                <button onclick="installPWA()" id="installBtn" class="hidden text-xs bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 px-3 py-2 rounded-xl font-medium border border-emerald-500/20 transition items-center gap-1">
+                    📥 Instalar App
+                </button>
+                <button onclick="logout()" class="whitespace-nowrap text-xs bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 px-3 py-2 rounded-xl font-medium border border-rose-500/20 transition">
+                    Cerrar Sesión
+                </button>
+            </div>
+        </header>
+
+        <!-- NAVEGACIÓN MÓVIL -->
+        <div class="mobile-nav xl:hidden flex bg-slate-900 border-b border-slate-800 p-2 gap-1 overflow-x-auto">
+            <button onclick="switchTab('cabinas')" id="tabMob-cabinas" class="flex-1 py-2 text-xs font-bold rounded-lg bg-cyan-500 text-slate-950 text-center">Cabinas</button>
+            <button onclick="switchTab('cafeteria')" id="tabMob-cafeteria" class="flex-1 py-2 text-xs font-medium rounded-lg text-slate-400 text-center">Snacks</button>
+            <button onclick="switchTab('caja')" id="tabMob-caja" class="flex-1 py-2 text-xs font-medium rounded-lg text-slate-400 text-center">Caja</button>
+            <button onclick="switchTab('admin')" id="tabMob-admin" class="flex-1 py-2 text-xs font-medium rounded-lg text-slate-400 text-center">Ajustes</button>
+        </div>
+
+        <!-- CONTENIDO DE LAS PESTAÑAS -->
+        <main class="flex-1 p-3 sm:p-4 md:p-6 max-w-7xl mx-auto w-full">
+
+            <!-- SECCIÓN 1: CABINAS -->
+            <section id="section-cabinas" class="space-y-6">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">Control de Estaciones</h2>
+                        <p class="text-xs text-slate-400">Administra el tiempo libre o prepago por cabina y añade consumos de cafetería.</p>
+                    </div>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <button onclick="addNewPC()" class="flex-1 sm:flex-none bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition">
+                            + Agregar Computadora
+                        </button>
+                    </div>
+                </div>
+
+                <!-- GRID DE COMPUTADORAS -->
+                <div id="pcsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Se llena con JavaScript -->
+                </div>
+            </section>
+
+            <!-- SECCIÓN 2: CAFETERÍA -->
+            <section id="section-cafeteria" class="hidden space-y-6">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">Cafetería, Snacks e Impresiones</h2>
+                        <p class="text-xs text-slate-400">Vende directamente o carga consumos a una computadora activa.</p>
+                    </div>
+                    <button id="newProductBtn" onclick="openProductModal()" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition">
+                        + Nuevo Producto
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Catálogo de Productos -->
+                    <div class="lg:col-span-2 space-y-4">
+                        <div class="flex gap-2 flex-wrap">
+                            <button onclick="filterCategory('todos')" id="cat-todos" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-cyan-500 text-slate-950 transition">Todos</button>
+                            <button onclick="filterCategory('Cafetería')" id="cat-Cafetería" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 text-slate-400 border border-slate-800 hover:border-slate-700 transition">☕ Cafetería</button>
+                            <button onclick="filterCategory('Bebidas')" id="cat-Bebidas" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 text-slate-400 border border-slate-800 hover:border-slate-700 transition">🥤 Bebidas</button>
+                            <button onclick="filterCategory('Snacks')" id="cat-Snacks" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 text-slate-400 border border-slate-800 hover:border-slate-700 transition">🍟 Snacks</button>
+                            <button onclick="filterCategory('Impresiones')" id="cat-Impresiones" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 text-slate-400 border border-slate-800 hover:border-slate-700 transition">🖨️ Impresiones</button>
+                        </div>
+                        <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <!-- Se llena con JS -->
+                        </div>
+                    </div>
+
+                    <!-- Carrito / Pedido actual -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col h-[420px] sm:h-[500px]">
+                        <h3 class="font-bold text-sm text-white mb-3 pb-2 border-b border-slate-800 flex justify-between items-center">
+                            <span>🛒 Ticket de Consumo</span>
+                            <span id="cartCount" class="text-xs bg-slate-800 text-cyan-400 px-2 py-0.5 rounded-full">0 items</span>
+                        </h3>
+                        <div id="cartItems" class="flex-1 overflow-y-auto space-y-2 pr-1 mb-3">
+                            <p class="text-xs text-slate-500 text-center py-10">El carrito está vacío</p>
+                        </div>
+                        <div class="border-t border-slate-800 pt-3 space-y-3">
+                            <div class="space-y-1">
+                                <label class="text-[11px] text-slate-400 font-medium">Asignar pedido a:</label>
+                                <select id="cartTargetPC" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500">
+                                    <option value="direct">Venta Directa Mostrador (Efectivo/Yape)</option>
+                                </select>
+                            </div>
+                            <div class="flex justify-between items-center text-sm font-bold text-white">
+                                <span>Total a Pagar:</span>
+                                <span id="cartTotal" class="text-cyan-400 text-lg">S/ 0.00</span>
+                            </div>
+                            <button onclick="checkoutCart()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition shadow-lg shadow-emerald-500/10">
+                                Cobrar / Registrar Venta
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 3: CAJA E HISTORIAL -->
+            <section id="section-caja" class="hidden space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                        <p class="text-xs text-slate-400 font-medium">Ingresos de Internet del día operativo</p>
+                        <h3 id="statInternet" class="text-2xl font-black text-cyan-400 mt-1">S/ 0.00</h3>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                        <p class="text-xs text-slate-400 font-medium">Ingresos de Cafetería del día operativo</p>
+                        <h3 id="statCafeteria" class="text-2xl font-black text-indigo-400 mt-1">S/ 0.00</h3>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 border-emerald-500/30 bg-emerald-500/5">
+                        <p class="text-xs text-emerald-400 font-medium">Total de Caja del día operativo</p>
+                        <h3 id="statTotal" class="text-2xl font-black text-emerald-400 mt-1">S/ 0.00</h3>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+                        <div>
+                            <h3 class="font-bold text-sm text-white">Cierre de caja diario</h3>
+                            <p class="text-xs text-slate-400 mt-1">Consulta el día seleccionado o guarda/actualiza su cierre. A medianoche, el día operativo se cierra automáticamente y comienza el siguiente.</p>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <label for="cashCloseDate" class="text-xs text-slate-400">
+                                Día del reporte
+                                <input id="cashCloseDate" type="date" onchange="renderCashCloseReport()" class="mt-1 block bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+                            </label>
+                            <button type="button" onclick="closeCashForDate()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition">
+                                Cerrar / Actualizar caja
+                            </button>
+                        </div>
+                    </div>
+                    <p id="cashCloseStatus" class="text-xs text-slate-400" aria-live="polite"></p>
+                    <div id="cashCloseSummary" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+                    <div>
+                        <h4 class="text-xs font-bold text-white mb-2">Resumen por forma de pago</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full min-w-[480px] text-left text-xs">
+                                <thead class="bg-slate-950 text-slate-400 border-b border-slate-800">
+                                    <tr>
+                                        <th class="p-3">Forma de pago</th>
+                                        <th class="p-3 text-right">Cobros</th>
+                                        <th class="p-3 text-right">Total (S/)</th>
+                                        <th class="p-3 text-right">Recibido (S/)</th>
+                                        <th class="p-3 text-right">Vuelto (S/)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cashClosePayments" class="divide-y divide-slate-800 text-slate-300"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-white mb-2">Detalle de cobros del día</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full min-w-[560px] text-left text-xs">
+                                <thead class="bg-slate-950 text-slate-400 border-b border-slate-800">
+                                    <tr>
+                                        <th class="p-3"># Ticket</th>
+                                        <th class="p-3">Hora</th>
+                                        <th class="p-3">Concepto</th>
+                                        <th class="p-3">Atendió</th>
+                                        <th class="p-3">Forma de pago</th>
+                                        <th class="p-3 text-right">Monto (S/)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cashCloseTransactions" class="divide-y divide-slate-800 text-slate-300"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-sm text-white">Historial de Tickets y Cobros</h3>
+                        <div id="backupControls" class="flex gap-2">
+                            <button onclick="exportJSON()" class="bg-slate-800 hover:bg-slate-700 text-cyan-400 font-semibold px-3 py-1.5 rounded-xl text-xs transition border border-slate-700">Exportar Backup (.json)</button>
+                            <label class="bg-slate-800 hover:bg-slate-700 text-indigo-400 font-semibold px-3 py-1.5 rounded-xl text-xs transition border border-slate-700 cursor-pointer">
+                                Importar Backup <input type="file" accept=".json" onchange="importJSON(event)" class="hidden">
+                            </label>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-[640px] text-left text-xs">
+                            <thead class="bg-slate-950 text-slate-400 border-b border-slate-800">
+                                <tr>
+                                    <th class="p-3"># Ticket</th>
+                                    <th class="p-3">Hora</th>
+                                    <th class="p-3">Concepto / Estación</th>
+                                    <th class="p-3">Atendió</th>
+                                    <th class="p-3">Forma de pago</th>
+                                    <th class="p-3 text-right">Recibido (S/)</th>
+                                    <th class="p-3 text-right">Monto</th>
+                                    <th id="salesActionsHeader" class="hidden p-3 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="salesTableBody" class="divide-y divide-slate-800 text-slate-300">
+                                <tr><td colspan="7" class="p-4 text-center text-slate-500">No hay transacciones en este turno</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 4: ADMIN Y TARIFAS -->
+            <section id="section-admin" class="hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                        <h3 class="font-bold text-sm text-white">Configuración de Tarifas y Cabinas</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Precio por Hora (S/)</label>
+                                <input type="number" step="0.5" id="cfgPriceHour" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Cobro Mínimo (S/)</label>
+                                <input type="number" step="0.5" id="cfgMinPrice" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500">
+                            </div>
+                            <button onclick="saveSettings()" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition">Guardar Cambios</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold text-sm text-white">Gestión de Usuarios Operadores</h3>
+                            <button id="newUserBtn" onclick="openUserModal()" class="bg-slate-800 hover:bg-slate-700 text-cyan-400 font-semibold px-3 py-1.5 rounded-xl text-xs border border-slate-700">+ Nuevo Usuario</button>
+                        </div>
+                        <div id="usersList" class="space-y-2">
+                            <!-- Se llena con JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="expiryNotifications" class="fixed bottom-4 right-4 z-[60] flex flex-col gap-2" aria-live="assertive"></div>
+
+    <!-- MODAL DE INICIO DE SESIÓN DE TIEMPO (PC) -->
+    <div id="timeModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="modal-panel bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+            <h3 id="timeModalTitle" class="font-bold text-sm text-white">Iniciar Sesión en PC</h3>
+            <div class="flex gap-2">
+                <button onclick="setModalMode('libre')" id="btnModeLibre" class="flex-1 py-2 text-xs font-semibold rounded-xl bg-cyan-500 text-slate-950 transition">Tiempo Libre</button>
+                <button onclick="setModalMode('prepago')" id="btnModePrepago" class="flex-1 py-2 text-xs font-semibold rounded-xl bg-slate-950 text-slate-400 border border-slate-800 transition">Tiempo Fijo</button>
+            </div>
+            <div id="prepagoInputContainer" class="hidden space-y-1">
+                <label class="text-xs text-slate-300">Duración en Minutos:</label>
+                <input type="number" id="modalMinutes" value="60" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500">
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button onclick="closeTimeModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2 rounded-xl text-xs transition">Cancelar</button>
+                <button onclick="confirmStartTime()" class="flex-1 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-2 rounded-xl text-xs transition">Iniciar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL COBRO PC -->
+    <div id="checkoutModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="modal-panel bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <h3 id="checkoutTitle" class="font-bold text-base text-white border-b border-slate-800 pb-2">Cobrar Estación</h3>
+            <div id="checkoutDetails" class="space-y-2 text-xs text-slate-300">
+                <!-- Resumen -->
+            </div>
+            <div class="space-y-1 pt-2 border-t border-slate-800">
+                <label for="paymentMethod" class="text-xs text-slate-400">Forma de pago:</label>
+                <select id="paymentMethod" onchange="calcVuelto()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Yape">Yape</option>
+                    <option value="Plin">Plin</option>
+                    <option value="Tarjeta">Tarjeta</option>
+                </select>
+                <label for="cashReceived" class="block pt-2 text-xs text-slate-400">Monto recibido o enviado (S/):</label>
+                <input type="number" min="0" step="0.01" id="cashReceived" oninput="calcVuelto()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm font-bold text-white focus:outline-none focus:border-cyan-500">
+                <p class="text-xs font-bold text-emerald-400 mt-1">Vuelto: <span id="changeAmount">S/ 0.00</span></p>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button onclick="closeCheckoutModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-xl text-xs transition">Cancelar</button>
+                <button onclick="confirmCheckout()" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition">Confirmar Cobro</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PRODUCTO CAFETERÍA -->
+    <div id="productModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="modal-panel bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+            <h3 id="prodModalTitle" class="font-bold text-sm text-white">Nuevo Producto</h3>
+            <input type="hidden" id="editProdId">
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-300 mb-1">Nombre del Producto</label>
+                    <input type="text" id="prodName" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500">
+                </div>
+                <div>
+                    <label class="block text-slate-300 mb-1">Categoría</label>
+                    <select id="prodCategory" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500">
+                        <option value="Cafetería">Cafetería</option>
+                        <option value="Bebidas">Bebidas</option>
+                        <option value="Snacks">Snacks</option>
+                        <option value="Impresiones">Impresiones</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-slate-300 mb-1">Precio (S/)</label>
+                        <input type="number" step="0.5" id="prodPrice" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 mb-1">Stock</label>
+                        <input type="number" id="prodStock" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500">
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label for="prodImageInput" class="block text-slate-300 mb-1">Foto del producto</label>
+                    <input type="file" id="prodImageInput" accept="image/*" onchange="handleProductImage(event)" class="w-full text-xs text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-800 file:px-3 file:py-2 file:text-cyan-400">
+                    <p class="text-[11px] text-slate-500">Se optimiza para ocupar menos espacio. Máximo 10 MB por foto.</p>
+                    <div id="prodImagePreviewContainer" class="hidden relative overflow-hidden rounded-xl border border-slate-800">
+                        <img id="prodImagePreview" alt="Vista previa de la foto del producto" class="h-40 w-full object-cover">
+                        <button type="button" onclick="removeProductImage()" class="absolute right-2 top-2 rounded-lg bg-slate-950/90 px-3 py-2 text-xs font-semibold text-rose-300">Quitar foto</button>
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button onclick="closeProductModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2 rounded-xl text-xs transition">Cancelar</button>
+                <button onclick="saveProduct()" class="flex-1 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-2 rounded-xl text-xs transition">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="userModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="modal-panel bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+            <h3 id="userModalTitle" class="font-bold text-sm text-white">Agregar Usuario</h3>
+            <form id="userForm" onsubmit="saveUser(event)" class="space-y-3">
+                <div>
+                    <label for="newUserName" class="block text-xs text-slate-300 mb-1">Nombre de usuario</label>
+                    <input type="text" id="newUserName" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+                </div>
+                <div>
+                    <label for="newUserPassword" class="block text-xs text-slate-300 mb-1">Contraseña</label>
+                    <div class="flex gap-2">
+                        <input type="password" id="newUserPassword" required class="min-w-0 flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+                        <button id="toggleUserPassword" type="button" onclick="toggleUserPasswordVisibility()" aria-controls="newUserPassword" aria-pressed="false" aria-label="Mostrar contraseña" class="rounded-xl border border-slate-700 bg-slate-800 px-3 text-xs text-slate-300 hover:bg-slate-700">Mostrar</button>
+                    </div>
+                </div>
+                <div id="newUserRoleContainer">
+                    <label for="newUserRole" class="block text-xs text-slate-300 mb-1">Tipo de usuario</label>
+                    <select id="newUserRole" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+                        <option value="Administrador">Admin</option>
+                        <option value="Trabajador" selected>Trabajador</option>
+                    </select>
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeUserModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2 rounded-xl text-xs transition">Cancelar</button>
+                    <button id="saveUserButton" type="submit" class="flex-1 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-2 rounded-xl text-xs transition">Crear Usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE LÓGICA -->
+    <script>
+        // ESTADO GLOBAL
+        let currentUser = null;
+        let editingUserIndex = null;
+        let pendingProductImage = '';
+        let activeTab = 'cabinas';
+        let currentFilterCat = 'todos';
+        let modalPCId = null;
+        let modalTimeMode = 'libre';
+        let activeCheckoutPC = null;
+        let activeCheckoutType = null;
+        let pendingDirectCheckout = null;
+        let deferredPrompt = null;
+        let alarmAudioContext = null;
+
+        let db = {
+            settings: { priceHour: 2.50, minPrice: 1.00 },
+            users: [
+                { user: 'admin', pass: '1234', role: 'Administrador' },
+                { user: 'caja1', pass: '1234', role: 'Trabajador' }
+            ],
+            pcs: [
+                { id: 1, name: 'PC-01', status: 'libre', startTime: null, durationMinutes: 0, elapsedSeconds: 0, consumption: [] },
+                { id: 2, name: 'PC-02', status: 'libre', startTime: null, durationMinutes: 0, elapsedSeconds: 0, consumption: [] },
+                { id: 3, name: 'PC-03', status: 'libre', startTime: null, durationMinutes: 0, elapsedSeconds: 0, consumption: [] },
+                { id: 4, name: 'PC-04', status: 'libre', startTime: null, durationMinutes: 0, elapsedSeconds: 0, consumption: [] },
+                { id: 5, name: 'PC-05', status: 'libre', startTime: null, durationMinutes: 0, elapsedSeconds: 0, consumption: [] },
+                { id: 6, name: 'PC-06', status: 'libre', startTime: null, durationMinutes: 0, elapsedSeconds: 0, consumption: [] }
+            ],
+            products: [
+                { id: 1, name: 'Café Americano', category: 'Cafetería', price: 3.50, stock: 50 },
+                { id: 2, name: 'Capuchino', category: 'Cafetería', price: 5.00, stock: 30 },
+                { id: 3, name: 'Inca Kola 500ml', category: 'Bebidas', price: 3.00, stock: 40 },
+                { id: 4, name: 'Agua San Luis', category: 'Bebidas', price: 2.00, stock: 25 },
+                { id: 5, name: 'Papas Lays', category: 'Snacks', price: 2.50, stock: 20 },
+                { id: 6, name: 'Galleta Sublimet', category: 'Snacks', price: 2.00, stock: 35 },
+                { id: 7, name: 'Impresión B/N (Pág)', category: 'Impresiones', price: 0.50, stock: 999 },
+                { id: 8, name: 'Impresión Color (Pág)', category: 'Impresiones', price: 1.50, stock: 999 }
+            ],
+            cart: [],
+            sales: [],
+            cashClosures: [],
+            businessDate: null
+        };
+
+        // CARGAR DATOS LOCALES AL INICIAR
+        window.addEventListener('DOMContentLoaded', () => {
+            const saved = localStorage.getItem('cybercafe_db_v2');
+            if (saved) {
+                try {
+                    const savedDB = JSON.parse(saved);
+                    if (!savedDB || typeof savedDB !== 'object' || Array.isArray(savedDB)) {
+                        throw new Error('El respaldo local no tiene un formato válido.');
+                    }
+
+                    db = {
+                        ...db,
+                        ...savedDB,
+                        settings: { ...db.settings, ...(savedDB.settings || {}) },
+                        users: Array.isArray(savedDB.users) && savedDB.users.length
+                            ? savedDB.users.map(user => user && user.role === 'Cajero' ? { ...user, role: 'Trabajador' } : user)
+                            : db.users,
+                        pcs: Array.isArray(savedDB.pcs) ? savedDB.pcs : db.pcs,
+                        products: Array.isArray(savedDB.products) ? savedDB.products : db.products,
+                        cart: Array.isArray(savedDB.cart) ? savedDB.cart : db.cart,
+                        sales: Array.isArray(savedDB.sales) ? savedDB.sales : db.sales,
+                        cashClosures: Array.isArray(savedDB.cashClosures) ? savedDB.cashClosures : db.cashClosures
+                    };
+                } catch (error) {
+                    console.error('No se pudieron cargar los datos guardados; se usarán los valores iniciales.', error);
+                }
+            }
+            db.businessDate = isValidDateKey(db.businessDate) ? db.businessDate : getLocalDateKey();
+            setInterval(clockTick, 1000);
+            updateClockDisplay();
+        });
+
+        function saveDB() {
+            localStorage.setItem('cybercafe_db_v2', JSON.stringify(db));
+        }
+
+        // RELOJ Y CRONÓMETROS EN TIEMPO REAL
+        function clockTick() {
+            const now = new Date();
+            document.getElementById('currentClock').innerText = now.toLocaleTimeString();
+            synchronizeBusinessDate(now);
+
+            let changed = false;
+            let sessionExpired = false;
+            db.pcs.forEach(pc => {
+                if (pc.status === 'libre') return;
+
+                if (pc.status === 'libre_tiempo') {
+                    pc.elapsedSeconds++;
+                    changed = true;
+                } else if (pc.status === 'prepago') {
+                    pc.elapsedSeconds++;
+                    const totalSecs = pc.durationMinutes * 60;
+                    if (pc.elapsedSeconds >= totalSecs) {
+                        pc.status = 'vencido';
+                        sessionExpired = true;
+                        showExpiryNotification(pc);
+                        playAlarmSound();
+                    }
+                    changed = true;
+                }
+            });
+
+            if (sessionExpired) saveDB();
+            if (changed && activeTab === 'cabinas') {
+                renderCabinas();
+            }
+        }
+
+        function unlockAlarmAudio() {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+
+            try {
+                if (!alarmAudioContext) alarmAudioContext = new AudioContext();
+                if (alarmAudioContext.state === 'suspended') {
+                    alarmAudioContext.resume().catch(error => {
+                        console.error('No se pudo activar el audio de las notificaciones.', error);
+                    });
+                }
+            } catch (error) {
+                console.error('No se pudo iniciar el audio de las notificaciones.', error);
+            }
+        }
+
+        function playAlarmSound() {
+            if (!alarmAudioContext || alarmAudioContext.state !== 'running') {
+                console.error('El audio de la notificación no está disponible. Inicia sesión para activarlo.');
+                return;
+            }
+
+            const startAt = alarmAudioContext.currentTime;
+            [0, 0.45, 0.9].forEach(offset => {
+                const oscillator = alarmAudioContext.createOscillator();
+                const gain = alarmAudioContext.createGain();
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, startAt + offset);
+                gain.gain.setValueAtTime(0.0001, startAt + offset);
+                gain.gain.exponentialRampToValueAtTime(0.25, startAt + offset + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, startAt + offset + 0.22);
+                oscillator.connect(gain);
+                gain.connect(alarmAudioContext.destination);
+                oscillator.start(startAt + offset);
+                oscillator.stop(startAt + offset + 0.24);
+            });
+        }
+
+        function showExpiryNotification(pc) {
+            const container = document.getElementById('expiryNotifications');
+            const notification = document.createElement('div');
+            notification.className = 'flex items-center gap-3 max-w-sm rounded-xl border border-rose-500/40 bg-slate-900 p-4 shadow-2xl';
+
+            const message = document.createElement('p');
+            message.className = 'flex-1 text-sm font-semibold text-white';
+            message.textContent = `¡Tiempo terminado en ${pc.name}!`;
+
+            const closeButton = document.createElement('button');
+            closeButton.type = 'button';
+            closeButton.className = 'rounded-lg bg-rose-500 px-3 py-2 text-xs font-bold text-white hover:bg-rose-400';
+            closeButton.textContent = 'Cerrar';
+            closeButton.addEventListener('click', () => notification.remove());
+
+            notification.append(message, closeButton);
+            container.appendChild(notification);
+        }
+
+        // LOGIN
+        function fillLogin(u, p) {
+            document.getElementById('loginUser').value = u;
+            document.getElementById('loginPass').value = p;
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            unlockAlarmAudio();
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value;
+            const found = db.users.find(x => x && x.user === u && x.pass === p);
+            
+            if (found) {
+                currentUser = found;
+                document.getElementById('loginModal').classList.add('hidden');
+                document.getElementById('appContainer').classList.remove('hidden');
+                document.getElementById('userBadge').innerText = `${found.user} (${getRoleLabel(found.role)})`;
+                document.getElementById('loginError').classList.add('hidden');
+                initApp();
+            } else {
+                document.getElementById('loginError').classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('appContainer').classList.add('hidden');
+            document.getElementById('loginModal').classList.remove('hidden');
+            document.getElementById('loginPass').value = '';
+            document.getElementById('loginError').classList.add('hidden');
+        }
+
+        function initApp() {
+            updateAdminControlVisibility();
+            renderCabinas();
+            renderProducts();
+            renderCart();
+            renderCartSelect();
+            renderSales();
+            renderUsers();
+            loadSettingsForm();
+            updateCajaStats();
+            renderCashCloseReport();
+            if (!isAdminUser() && activeTab === 'admin') activeTab = 'cabinas';
+            switchTab(activeTab);
+        }
+
+        // TABS
+        function switchTab(tab) {
+            if (tab === 'admin' && !isAdminUser()) {
+                alert('Solo un administrador puede acceder a Usuarios y Tarifas.');
+                return;
+            }
+            activeTab = tab;
+            ['cabinas', 'cafeteria', 'caja', 'admin'].forEach(t => {
+                document.getElementById(`section-${t}`).classList.add('hidden');
+                const btn = document.getElementById(`tabBtn-${t}`);
+                if (btn) {
+                    btn.className = t === tab 
+                        ? 'px-4 py-1.5 text-xs font-semibold rounded-lg transition bg-cyan-500 text-slate-950 shadow' 
+                        : 'px-4 py-1.5 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-white';
+                    if (t === 'admin' && !isAdminUser()) btn.classList.add('hidden');
+                }
+                const mobBtn = document.getElementById(`tabMob-${t}`);
+                if (mobBtn) {
+                    mobBtn.className = t === tab
+                        ? 'flex-1 py-2 text-xs font-bold rounded-lg bg-cyan-500 text-slate-950 text-center'
+                        : 'flex-1 py-2 text-xs font-medium rounded-lg text-slate-400 text-center';
+                    if (t === 'admin' && !isAdminUser()) mobBtn.classList.add('hidden');
+                }
+            });
+            document.getElementById(`section-${tab}`).classList.remove('hidden');
+            if (tab === 'caja') {
+                updateCajaStats();
+                renderCashCloseReport();
+            }
+        }
+
+        function isAdminUser(user) {
+            const role = user ? user.role : currentUser ? currentUser.role : null;
+            return typeof role === 'string' && ['admin', 'administrador'].includes(role.trim().toLowerCase());
+        }
+
+        function getRoleLabel(role) {
+            return isAdminUser({ role }) ? 'Admin' : 'Trabajador';
+        }
+
+        function requireAdminPermission() {
+            if (isAdminUser()) return true;
+            alert('Solo un administrador puede realizar esta modificación.');
+            return false;
+        }
+
+        function updateAdminControlVisibility() {
+            const admin = isAdminUser();
+            ['tabBtn-admin', 'tabMob-admin', 'newProductBtn', 'backupControls', 'newUserBtn'].forEach(id => {
+                document.getElementById(id).classList.toggle('hidden', !admin);
+            });
+        }
+
+        function updateClockDisplay() {}
+
+        // CABINAS
+        function renderCabinas() {
+            const grid = document.getElementById('pcsGrid');
+            grid.innerHTML = '';
+
+            db.pcs.forEach(pc => {
+                let statusBadge = '';
+                let timerText = 'Disponible';
+                let actionButtons = '';
+                let cardBorder = 'border-slate-800 bg-slate-900/80';
+
+                if (pc.status === 'libre') {
+                    statusBadge = `<span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-medium border border-emerald-500/20">Libre</span>`;
+                    timerText = '00:00:00';
+                    actionButtons = `
+                        <button onclick="openTimeModal(${pc.id})" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-2 rounded-xl text-xs transition">Iniciar Sesión</button>
+                    `;
+                } else if (pc.status === 'libre_tiempo' || pc.status === 'prepago') {
+                    cardBorder = pc.status === 'prepago' ? 'border-indigo-500/40 bg-indigo-500/5' : 'border-cyan-500/40 bg-cyan-500/5';
+                    const badgeText = pc.status === 'prepago' ? 'Prepago (Fijo)' : 'Tiempo Libre';
+                    const badgeColor = pc.status === 'prepago' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20';
+                    
+                    statusBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full font-medium border ${badgeColor}">${badgeText}</span>`;
+                    
+                    if (pc.status === 'libre_tiempo') {
+                        timerText = formatTime(pc.elapsedSeconds);
+                    } else {
+                        const rem = (pc.durationMinutes * 60) - pc.elapsedSeconds;
+                        timerText = rem > 0 ? formatTime(rem) : '00:00:00 (Vencido)';
+                    }
+
+                    const currentCost = calculatePCCOSTO(pc);
+
+                    actionButtons = `
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between text-xs font-medium text-slate-300">
+                                <span>Consumo Parcial:</span>
+                                <span class="text-cyan-400 font-bold">S/ ${currentCost.toFixed(2)}</span>
+                            </div>
+                            <div class="flex gap-1">
+                                <button onclick="addTimePC(${pc.id}, 15)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-cyan-400 py-1.5 rounded-lg text-[11px] transition border border-slate-700">+15m</button>
+                                <button onclick="openAddSnackModal(${pc.id})" class="flex-1 bg-slate-800 hover:bg-slate-700 text-indigo-400 py-1.5 rounded-lg text-[11px] transition border border-slate-700">+☕ Snack</button>
+                            </div>
+                            <button onclick="openCheckoutModal(${pc.id})" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2 rounded-xl text-xs transition shadow">Cobrar & Cerrar</button>
+                        </div>
+                    `;
+                } else if (pc.status === 'vencido') {
+                    cardBorder = 'border-rose-500/50 bg-rose-500/10 animate-pulse-slow';
+                    statusBadge = `<span class="text-[10px] bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded-full font-medium border border-rose-500/30">¡Tiempo Vencido!</span>`;
+                    timerText = '00:00:00';
+                    actionButtons = `
+                        <button onclick="openCheckoutModal(${pc.id})" class="w-full bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold py-2 rounded-xl text-xs transition shadow">Cobrar Urgente</button>
+                    `;
+                }
+
+                let consumptionsHTML = '';
+                if (pc.consumption && pc.consumption.length > 0) {
+                    consumptionsHTML = `<div class="text-[11px] text-slate-400 border-t border-slate-800/60 pt-2 space-y-0.5">`;
+                    pc.consumption.forEach(c => {
+                        consumptionsHTML += `<div class="flex justify-between"><span>• ${c.qty}x ${c.name}</span><span>S/ ${(c.price * c.qty).toFixed(2)}</span></div>`;
+                    });
+                    consumptionsHTML += `</div>`;
+                }
+
+                const card = document.createElement('div');
+                card.className = `border rounded-2xl p-4 flex flex-col justify-between space-y-4 shadow-lg ${cardBorder}`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center gap-1.5">
+                                <h3 class="font-bold text-base text-white">${pc.name}</h3>
+                                ${pc.status === 'libre' && isAdminUser() ? `<button onclick="editPCName(${pc.id})" class="text-slate-500 hover:text-cyan-400 text-xs">✏️</button>` : ''}
+                            </div>
+                            <p class="text-[10px] text-slate-500">Cabina de Internet</p>
+                        </div>
+                        ${statusBadge}
+                    </div>
+                    <div class="text-center py-2 bg-slate-950/60 rounded-xl border border-slate-800/80">
+                        <span class="text-xs text-slate-400 block mb-0.5">${pc.status === 'prepago' ? 'Tiempo Restante' : 'Tiempo Transcurrido'}</span>
+                        <span class="text-xl font-black font-mono tracking-wider text-white">${timerText}</span>
+                    </div>
+                    ${consumptionsHTML}
+                    <div class="pt-1">
+                        ${actionButtons}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function formatTime(totalSecs) {
+            const h = Math.floor(totalSecs / 3600);
+            const m = Math.floor((totalSecs % 3600) / 60);
+            const s = totalSecs % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        function calculatePCCOSTO(pc) {
+            const hours = pc.elapsedSeconds / 3600;
+            let cost = hours * db.settings.priceHour;
+            if (cost < db.settings.minPrice && pc.elapsedSeconds > 0) cost = db.settings.minPrice;
+            
+            let snackTotal = 0;
+            if (pc.consumption) {
+                pc.consumption.forEach(c => snackTotal += (c.price * c.qty));
+            }
+            return cost + snackTotal;
+        }
+
+        function addNewPC() {
+            const newId = db.pcs.length > 0 ? Math.max(...db.pcs.map(p => p.id)) + 1 : 1;
+            db.pcs.push({
+                id: newId,
+                name: `PC-${String(newId).padStart(2, '0')}`,
+                status: 'libre',
+                startTime: null,
+                durationMinutes: 0,
+                elapsedSeconds: 0,
+                consumption: []
+            });
+            saveDB();
+            renderCabinas();
+            renderCartSelect();
+        }
+
+        function editPCName(id) {
+            if (!requireAdminPermission()) return;
+            const pc = db.pcs.find(p => p.id === id);
+            if (!pc) return;
+            const newName = prompt("Nuevo nombre para la computadora:", pc.name);
+            if (newName && newName.trim() !== '') {
+                pc.name = newName.trim();
+                saveDB();
+                renderCabinas();
+                renderCartSelect();
+            }
+        }
+
+        // MODAL TIEMPO PC
+        function openTimeModal(pcId) {
+            modalPCId = pcId;
+            modalTimeMode = 'libre';
+            setModalMode('libre');
+            document.getElementById('timeModal').classList.remove('hidden');
+        }
+
+        function closeTimeModal() {
+            document.getElementById('timeModal').classList.add('hidden');
+        }
+
+        function setModalMode(mode) {
+            modalTimeMode = mode;
+            const btnLibre = document.getElementById('btnModeLibre');
+            const btnPrepago = document.getElementById('btnModePrepago');
+            const prepCont = document.getElementById('prepagoInputContainer');
+
+            if (mode === 'libre') {
+                btnLibre.className = 'flex-1 py-2 text-xs font-semibold rounded-xl bg-cyan-500 text-slate-950 transition';
+                btnPrepago.className = 'flex-1 py-2 text-xs font-semibold rounded-xl bg-slate-950 text-slate-400 border border-slate-800 transition';
+                prepCont.classList.add('hidden');
+            } else {
+                btnPrepago.className = 'flex-1 py-2 text-xs font-semibold rounded-xl bg-cyan-500 text-slate-950 transition';
+                btnLibre.className = 'flex-1 py-2 text-xs font-semibold rounded-xl bg-slate-950 text-slate-400 border border-slate-800 transition';
+                prepCont.classList.remove('hidden');
+            }
+        }
+
+        function confirmStartTime() {
+            const pc = db.pcs.find(p => p.id === modalPCId);
+            if (!pc) return;
+
+            unlockAlarmAudio();
+            pc.startTime = new Date().toISOString();
+            pc.elapsedSeconds = 0;
+            if (modalTimeMode === 'libre') {
+                pc.status = 'libre_tiempo';
+                pc.durationMinutes = 0;
+            } else {
+                pc.status = 'prepago';
+                const mins = parseInt(document.getElementById('modalMinutes').value) || 60;
+                pc.durationMinutes = mins;
+            }
+            saveDB();
+            closeTimeModal();
+            renderCabinas();
+        }
+
+        function addTimePC(pcId, mins) {
+            const pc = db.pcs.find(p => p.id === pcId);
+            if (!pc) return;
+            if (pc.status === 'prepago') {
+                pc.durationMinutes += mins;
+            } else if (pc.status === 'libre_tiempo') {
+                pc.status = 'prepago';
+                const currentMins = Math.ceil(pc.elapsedSeconds / 60);
+                pc.durationMinutes = currentMins + mins;
+            }
+            saveDB();
+            renderCabinas();
+        }
+
+        // COBRO PC
+        function openCheckoutModal(pcId) {
+            activeCheckoutPC = db.pcs.find(p => p.id === pcId);
+            if (!activeCheckoutPC) return;
+            activeCheckoutType = 'pc';
+            pendingDirectCheckout = null;
+
+            const internetCost = Math.max(
+                (activeCheckoutPC.elapsedSeconds / 3600) * db.settings.priceHour,
+                activeCheckoutPC.elapsedSeconds > 0 ? db.settings.minPrice : 0
+            );
+
+            let snackTotal = 0;
+            let snackHTML = '';
+            if (activeCheckoutPC.consumption && activeCheckoutPC.consumption.length > 0) {
+                activeCheckoutPC.consumption.forEach(c => {
+                    const sub = c.price * c.qty;
+                    snackTotal += sub;
+                    snackHTML += `<div class="flex justify-between text-slate-400"><span>• ${c.qty}x ${c.name}</span><span>S/ ${sub.toFixed(2)}</span></div>`;
+                });
+            }
+
+            const total = internetCost + snackTotal;
+            activeCheckoutPC._computedTotal = total;
+            activeCheckoutPC._internetCost = internetCost;
+            activeCheckoutPC._snackTotal = snackTotal;
+
+            document.getElementById('checkoutTitle').innerText = `Cobrar Estación ${activeCheckoutPC.name}`;
+            document.getElementById('checkoutDetails').innerHTML = `
+                <div class="flex justify-between"><span>Tiempo Usado:</span> <span class="font-bold text-white">${formatTime(activeCheckoutPC.elapsedSeconds)}</span></div>
+                <div class="flex justify-between"><span>Costo Internet:</span> <span class="font-bold text-white">S/ ${internetCost.toFixed(2)}</span></div>
+                ${snackHTML ? `<div class="pt-1 pb-1 border-t border-slate-800"><b>Consumos de Cafetería:</b>${snackHTML}</div>` : ''}
+                <div class="flex justify-between text-sm font-bold text-white pt-2 border-t border-slate-800">
+                    <span>Total General:</span>
+                    <span class="text-cyan-400 text-base">S/ ${total.toFixed(2)}</span>
+                </div>
+            `;
+            openCheckoutPayment(total);
+        }
+
+        function openCheckoutPayment(total) {
+            document.getElementById('paymentMethod').value = 'Efectivo';
+            document.getElementById('cashReceived').value = total.toFixed(2);
+            calcVuelto();
+            document.getElementById('checkoutModal').classList.remove('hidden');
+        }
+
+        function getLocalDateKey(date = new Date()) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function isValidDateKey(dateKey) {
+            if (typeof dateKey !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return false;
+            const [year, month, day] = dateKey.split('-').map(Number);
+            const date = new Date(year, month - 1, day);
+            return date.getFullYear() === year &&
+                date.getMonth() === month - 1 &&
+                date.getDate() === day;
+        }
+
+        function getBusinessDateKey() {
+            return isValidDateKey(db.businessDate) ? db.businessDate : getLocalDateKey();
+        }
+
+        function getNextDateKey(dateKey) {
+            const [year, month, day] = dateKey.split('-').map(Number);
+            return getLocalDateKey(new Date(year, month - 1, day + 1));
+        }
+
+        function formatCashDate(dateKey) {
+            const [year, month, day] = dateKey.split('-').map(Number);
+            return new Date(year, month - 1, day, 12).toLocaleDateString();
+        }
+
+        function getSalesForDate(dateKey) {
+            const legacyDate = formatCashDate(dateKey);
+            return db.sales.filter(sale => sale && (
+                sale.dateKey === dateKey ||
+                (!sale.dateKey && sale.date === legacyDate)
+            ));
+        }
+
+        function buildCashReport(dateKey, sales) {
+            const toAmount = value => {
+                const amount = Number(value);
+                return Number.isFinite(amount) ? amount : 0;
+            };
+            const roundAmount = value => Number(value.toFixed(2));
+            const paymentGroups = new Map();
+            let internetTotal = 0;
+            let cafeteriaTotal = 0;
+            let total = 0;
+            let amountReceivedTotal = 0;
+            let changeTotal = 0;
+
+            const transactions = sales.map(sale => {
+                const saleTotal = toAmount(sale.total);
+                const amountReceived = sale.amountReceived == null ? saleTotal : toAmount(sale.amountReceived);
+                const changeAmount = sale.changeAmount == null
+                    ? Math.max(0, amountReceived - saleTotal)
+                    : toAmount(sale.changeAmount);
+                const paymentMethod = sale.paymentMethod || 'No especificado';
+                internetTotal += toAmount(sale.internetAmount);
+                cafeteriaTotal += toAmount(sale.cafeteriaAmount);
+                total += saleTotal;
+                amountReceivedTotal += amountReceived;
+                changeTotal += changeAmount;
+
+                if (!paymentGroups.has(paymentMethod)) {
+                    paymentGroups.set(paymentMethod, { method: paymentMethod, count: 0, total: 0, received: 0, change: 0 });
+                }
+                const payment = paymentGroups.get(paymentMethod);
+                payment.count += 1;
+                payment.total += saleTotal;
+                payment.received += amountReceived;
+                payment.change += changeAmount;
+
+                return {
+                    id: sale.id || '',
+                    time: sale.time || '',
+                    concept: sale.concept || '',
+                    user: sale.user || '',
+                    paymentMethod,
+                    total: roundAmount(saleTotal)
+                };
+            });
+
+            const methodOrder = ['Efectivo', 'Yape', 'Plin', 'Tarjeta'];
+            const payments = Array.from(paymentGroups.values())
+                .sort((a, b) => {
+                    const aIndex = methodOrder.indexOf(a.method);
+                    const bIndex = methodOrder.indexOf(b.method);
+                    if (aIndex === -1 && bIndex === -1) return a.method.localeCompare(b.method);
+                    if (aIndex === -1) return 1;
+                    if (bIndex === -1) return -1;
+                    return aIndex - bIndex;
+                })
+                .map(payment => ({
+                    ...payment,
+                    total: roundAmount(payment.total),
+                    received: roundAmount(payment.received),
+                    change: roundAmount(payment.change)
+                }));
+
+            return {
+                dateKey,
+                transactionCount: transactions.length,
+                internetTotal: roundAmount(internetTotal),
+                cafeteriaTotal: roundAmount(cafeteriaTotal),
+                total: roundAmount(total),
+                amountReceivedTotal: roundAmount(amountReceivedTotal),
+                changeTotal: roundAmount(changeTotal),
+                payments,
+                transactions
+            };
+        }
+
+        function synchronizeBusinessDate(now = new Date()) {
+            const todayKey = getLocalDateKey(now);
+            let closingDateKey = getBusinessDateKey();
+            if (closingDateKey >= todayKey) return false;
+
+            let lastClosedDateKey = '';
+            while (closingDateKey < todayKey) {
+                const hasClosure = db.cashClosures.some(item => item && item.dateKey === closingDateKey);
+                if (!hasClosure) {
+                    db.cashClosures.push({
+                        dateKey: closingDateKey,
+                        closedAt: now.toISOString(),
+                        closedBy: 'Sistema',
+                        report: buildCashReport(closingDateKey, getSalesForDate(closingDateKey))
+                    });
+                }
+                lastClosedDateKey = closingDateKey;
+                closingDateKey = getNextDateKey(closingDateKey);
+            }
+
+            db.businessDate = todayKey;
+            const dateInput = document.getElementById('cashCloseDate');
+            if (dateInput) dateInput.value = todayKey;
+            saveDB();
+            updateCajaStats();
+            renderCashCloseReport();
+            const status = document.getElementById('cashCloseStatus');
+            if (status) {
+                status.textContent =
+                    `Cierres automáticos completados hasta ${formatCashDate(lastClosedDateKey)}. Día operativo iniciado: ${formatCashDate(todayKey)}.`;
+            }
+            return true;
+        }
+
+        function renderCashCloseReport() {
+            const dateInput = document.getElementById('cashCloseDate');
+            if (!dateInput) return;
+            if (!dateInput.value) dateInput.value = getBusinessDateKey();
+            const dateKey = dateInput.value;
+            const closure = db.cashClosures.find(item => item && item.dateKey === dateKey);
+            const savedReport = closure && closure.report && Array.isArray(closure.report.transactions)
+                ? closure.report
+                : null;
+            const report = savedReport || buildCashReport(dateKey, getSalesForDate(dateKey));
+            const status = document.getElementById('cashCloseStatus');
+            if (savedReport) {
+                const closedAt = new Date(closure.closedAt);
+                const closedAtText = Number.isNaN(closedAt.getTime()) ? '' : ` a las ${closedAt.toLocaleString()}`;
+                status.textContent = `Cierre guardado por ${closure.closedBy || 'usuario'}${closedAtText}. ${report.transactionCount} cobros registrados.`;
+            } else {
+                status.textContent = `Vista previa del ${formatCashDate(dateKey)}. Este reporte todavía no se ha guardado como cierre.`;
+            }
+
+            const summary = document.getElementById('cashCloseSummary');
+            summary.innerHTML = '';
+            [
+                ['Cobros registrados', report.transactionCount, false],
+                ['Ingresos de Internet', report.internetTotal, true],
+                ['Ingresos de Cafetería', report.cafeteriaTotal, true],
+                ['Total vendido', report.total, true],
+                ['Dinero recibido', report.amountReceivedTotal, true],
+                ['Vuelto entregado', report.changeTotal, true]
+            ].forEach(([label, amount, isMoney]) => {
+                const card = document.createElement('div');
+                card.className = 'rounded-xl border border-slate-800 bg-slate-950/60 p-3';
+                const title = document.createElement('p');
+                title.className = 'text-[11px] text-slate-400';
+                title.textContent = label;
+                const value = document.createElement('p');
+                value.className = 'mt-1 text-base font-bold text-white';
+                value.textContent = isMoney ? `S/ ${Number(amount || 0).toFixed(2)}` : String(amount || 0);
+                card.append(title, value);
+                summary.appendChild(card);
+            });
+
+            const paymentBody = document.getElementById('cashClosePayments');
+            paymentBody.innerHTML = '';
+            if (!report.payments || !report.payments.length) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="5" class="p-3 text-center text-slate-500">No hay cobros para este día.</td>';
+                paymentBody.appendChild(row);
+            } else {
+                report.payments.forEach(payment => {
+                    const row = document.createElement('tr');
+                    [
+                        payment.method,
+                        payment.count,
+                        `S/ ${Number(payment.total || 0).toFixed(2)}`,
+                        `S/ ${Number(payment.received || 0).toFixed(2)}`,
+                        `S/ ${Number(payment.change || 0).toFixed(2)}`
+                    ].forEach((value, index) => {
+                        const cell = document.createElement('td');
+                        cell.className = index === 0 ? 'p-3' : 'p-3 text-right';
+                        cell.textContent = String(value);
+                        row.appendChild(cell);
+                    });
+                    paymentBody.appendChild(row);
+                });
+            }
+
+            const transactionBody = document.getElementById('cashCloseTransactions');
+            transactionBody.innerHTML = '';
+            if (!report.transactions || !report.transactions.length) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="6" class="p-3 text-center text-slate-500">No hay cobros para este día.</td>';
+                transactionBody.appendChild(row);
+            } else {
+                report.transactions.forEach(transaction => {
+                    const row = document.createElement('tr');
+                    [
+                        transaction.id,
+                        transaction.time,
+                        transaction.concept,
+                        transaction.user,
+                        transaction.paymentMethod,
+                        `S/ ${Number(transaction.total || 0).toFixed(2)}`
+                    ].forEach((value, index) => {
+                        const cell = document.createElement('td');
+                        cell.className = index === 5 ? 'p-3 text-right' : 'p-3';
+                        cell.textContent = value == null ? '' : String(value);
+                        row.appendChild(cell);
+                    });
+                    transactionBody.appendChild(row);
+                });
+            }
+        }
+
+        function closeCashForDate() {
+            if (!currentUser) {
+                alert('Inicia sesión para guardar el cierre de caja.');
+                return;
+            }
+            const dateKey = document.getElementById('cashCloseDate').value;
+            if (!isValidDateKey(dateKey)) {
+                alert('Selecciona una fecha válida para el cierre.');
+                return;
+            }
+
+            const closure = {
+                dateKey,
+                closedAt: new Date().toISOString(),
+                closedBy: currentUser.user,
+                report: buildCashReport(dateKey, getSalesForDate(dateKey))
+            };
+            const existingIndex = db.cashClosures.findIndex(item => item && item.dateKey === dateKey);
+            if (existingIndex === -1) db.cashClosures.push(closure);
+            else db.cashClosures[existingIndex] = closure;
+            const advancesBusinessDate = dateKey === getBusinessDateKey();
+            let nextDateKey = getBusinessDateKey();
+            if (advancesBusinessDate) {
+                nextDateKey = getNextDateKey(dateKey);
+                db.businessDate = nextDateKey;
+                document.getElementById('cashCloseDate').value = nextDateKey;
+            }
+            saveDB();
+            updateCajaStats();
+            renderCashCloseReport();
+            if (advancesBusinessDate) {
+                document.getElementById('cashCloseStatus').textContent =
+                    `Cierre guardado para ${formatCashDate(dateKey)}. Día operativo avanzado a ${formatCashDate(nextDateKey)}; el reporte mostrado corresponde al nuevo día.`;
+            }
+        }
+
+        function getCheckoutTotal() {
+            if (activeCheckoutType === 'pc' && activeCheckoutPC) return activeCheckoutPC._computedTotal;
+            if (activeCheckoutType === 'direct' && pendingDirectCheckout) return pendingDirectCheckout.total;
+            return null;
+        }
+
+        function closeCheckoutModal() {
+            document.getElementById('checkoutModal').classList.add('hidden');
+            activeCheckoutPC = null;
+            activeCheckoutType = null;
+            pendingDirectCheckout = null;
+        }
+
+        function calcVuelto() {
+            const total = getCheckoutTotal();
+            if (total === null) return;
+            const rec = Number(document.getElementById('cashReceived').value) || 0;
+            const vuelto = rec - total;
+            document.getElementById('changeAmount').innerText = vuelto >= 0 ? `S/ ${vuelto.toFixed(2)}` : 'Monto insuficiente';
+        }
+
+        function confirmCheckout() {
+            const total = getCheckoutTotal();
+            if (total === null) return;
+            const rec = Number(document.getElementById('cashReceived').value);
+            if (!Number.isFinite(rec) || rec < total) {
+                alert('El monto recibido o enviado debe cubrir el total a pagar.');
+                return;
+            }
+
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            const transactionDate = new Date();
+            const businessDateKey = getBusinessDateKey();
+            db.sales.unshift({
+                id: 'TK-' + Math.floor(1000 + Math.random() * 9000),
+                time: transactionDate.toLocaleTimeString(),
+                date: formatCashDate(businessDateKey),
+                dateKey: businessDateKey,
+                concept: activeCheckoutType === 'pc'
+                    ? `Cobro ${activeCheckoutPC.name} (${formatTime(activeCheckoutPC.elapsedSeconds)}) + Snacks`
+                    : 'Venta Mostrador',
+                internetAmount: activeCheckoutType === 'pc' ? activeCheckoutPC._internetCost : 0,
+                cafeteriaAmount: activeCheckoutType === 'pc' ? activeCheckoutPC._snackTotal : total,
+                total,
+                paymentMethod,
+                amountReceived: rec,
+                changeAmount: rec - total,
+                user: currentUser ? currentUser.user : 'admin'
+            });
+
+            if (activeCheckoutType === 'pc') {
+                activeCheckoutPC.status = 'libre';
+                activeCheckoutPC.startTime = null;
+                activeCheckoutPC.durationMinutes = 0;
+                activeCheckoutPC.elapsedSeconds = 0;
+                activeCheckoutPC.consumption = [];
+            } else {
+                db.cart.forEach(item => {
+                    const product = db.products.find(p => p.id === item.id);
+                    if (product) product.stock = Math.max(0, product.stock - item.qty);
+                });
+                db.cart = [];
+            }
+
+            saveDB();
+            closeCheckoutModal();
+            renderCabinas();
+            renderProducts();
+            renderCart();
+            renderCartSelect();
+            renderSales();
+            updateCajaStats();
+        }
+
+        // CAFETERÍA Y SNACKS
+        function filterCategory(cat) {
+            currentFilterCat = cat;
+            ['todos', 'Cafetería', 'Bebidas', 'Snacks', 'Impresiones'].forEach(c => {
+                const btn = document.getElementById(`cat-${c}`);
+                if (btn) {
+                    btn.className = c === cat 
+                        ? 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-cyan-500 text-slate-950 transition' 
+                        : 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 text-slate-400 border border-slate-800 hover:border-slate-700 transition';
+                }
+            });
+            renderProducts();
+        }
+
+        function renderProducts() {
+            const grid = document.getElementById('productsGrid');
+            grid.innerHTML = '';
+
+            const filtered = currentFilterCat === 'todos' 
+                ? db.products 
+                : db.products.filter(p => p.category === currentFilterCat);
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<p class="col-span-2 text-xs text-slate-500 text-center py-6">No hay productos en esta categoría</p>`;
+                return;
+            }
+
+            filtered.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between space-y-3 relative hover:border-slate-700 transition';
+                card.innerHTML = `
+                    ${isAdminUser() ? `<div class="absolute top-3 right-3 flex gap-1"><button onclick="editProduct(${p.id})" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-cyan-400 px-2 py-1 rounded-lg border border-slate-700">✏️ Editar</button></div>` : ''}
+                    <div>
+                        <span class="text-[10px] text-cyan-400 font-medium">${p.category}</span>
+                        <h4 class="font-bold text-sm text-white mt-0.5 pr-14">${p.name}</h4>
+                    </div>
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <span class="text-xs text-slate-400 block">Stock: ${p.stock}</span>
+                            <span class="text-base font-black text-white">S/ ${p.price.toFixed(2)}</span>
+                        </div>
+                        <button onclick="addToCart(${p.id})" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-3 py-2 rounded-xl text-xs transition">
+                            + Agregar
+                        </button>
+                    </div>
+                `;
+                const photoArea = document.createElement('div');
+                photoArea.className = 'mt-3 flex h-36 w-full items-center justify-center overflow-hidden rounded-xl border border-slate-800 bg-slate-950/60';
+                if (typeof p.image === 'string' && p.image.startsWith('data:image/jpeg;base64,')) {
+                    const image = document.createElement('img');
+                    image.src = p.image;
+                    image.alt = `Foto de ${p.name}`;
+                    image.className = 'h-full w-full object-cover';
+                    photoArea.appendChild(image);
+                } else {
+                    const placeholder = document.createElement('span');
+                    placeholder.className = 'text-xs text-slate-500';
+                    placeholder.textContent = '📷 Sin foto';
+                    photoArea.appendChild(placeholder);
+                }
+                const productInfo = card.querySelector('div:not(.absolute)');
+                if (productInfo) productInfo.after(photoArea);
+                else card.prepend(photoArea);
+                grid.appendChild(card);
+            });
+        }
+
+        function renderCartSelect() {
+            const sel = document.getElementById('cartTargetPC');
+            sel.innerHTML = `<option value="direct">Venta Directa Mostrador (Efectivo/Yape)</option>`;
+            db.pcs.forEach(pc => {
+                if (pc.status !== 'libre') {
+                    sel.innerHTML += `<option value="${pc.id}">Cargar a ${pc.name}</option>`;
+                }
+            });
+        }
+
+        function addToCart(prodId) {
+            const prod = db.products.find(p => p.id === prodId);
+            if (!prod || prod.stock <= 0) {
+                alert("Producto sin stock disponible.");
+                return;
+            }
+
+            const existing = db.cart.find(item => item.id === prodId);
+            if (existing) {
+                if (existing.qty < prod.stock) existing.qty++;
+            } else {
+                db.cart.push({ id: prod.id, name: prod.name, price: prod.price, qty: 1 });
+            }
+            renderCart();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cartItems');
+            const countBadge = document.getElementById('cartCount');
+            const totalEl = document.getElementById('cartTotal');
+
+            if (db.cart.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-500 text-center py-10">El carrito está vacío</p>`;
+                countBadge.innerText = '0 items';
+                totalEl.innerText = 'S/ 0.00';
+                return;
+            }
+
+            container.innerHTML = '';
+            let total = 0;
+            let totalQty = 0;
+
+            db.cart.forEach((item, index) => {
+                const sub = item.price * item.qty;
+                total += sub;
+                totalQty += item.qty;
+
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-950/60 p-2 text-xs';
+                const details = document.createElement('div');
+                details.className = 'min-w-0';
+                const name = document.createElement('p');
+                name.className = 'truncate font-semibold text-white';
+                name.textContent = item.name;
+                const quantity = document.createElement('p');
+                quantity.className = 'text-slate-400';
+                quantity.textContent = `${item.qty} x S/ ${Number(item.price).toFixed(2)}`;
+                details.append(name, quantity);
+                const subtotal = document.createElement('span');
+                subtotal.className = 'whitespace-nowrap font-bold text-cyan-400';
+                subtotal.textContent = `S/ ${sub.toFixed(2)}`;
+                row.append(details, subtotal);
+                container.appendChild(row);
+            });
+
+            countBadge.innerText = `${totalQty} items`;
+            totalEl.innerText = `S/ ${total.toFixed(2)}`;
+        }
+
+        function renderSales() {
+            const tbody = document.getElementById('salesTableBody');
+            const canDeleteSales = isAdminUser();
+            document.getElementById('salesActionsHeader').classList.toggle('hidden', !canDeleteSales);
+            tbody.innerHTML = '';
+            if (!db.sales.length) {
+                const row = document.createElement('tr');
+                const cell = document.createElement('td');
+                cell.colSpan = canDeleteSales ? 8 : 7;
+                cell.className = 'p-4 text-center text-slate-500';
+                cell.textContent = 'No hay transacciones en este turno';
+                row.appendChild(cell);
+                tbody.appendChild(row);
+                return;
+            }
+
+            db.sales.forEach((sale, saleIndex) => {
+                const row = document.createElement('tr');
+                [
+                    sale.id,
+                    sale.time,
+                    sale.concept,
+                    sale.user,
+                    sale.paymentMethod || 'No especificado',
+                    Number.isFinite(Number(sale.amountReceived)) ? `S/ ${Number(sale.amountReceived).toFixed(2)}` : '—',
+                    `S/ ${Number(sale.total).toFixed(2)}`
+                ].forEach((value, cellIndex) => {
+                        const cell = document.createElement('td');
+                        cell.className = cellIndex >= 5 ? 'p-3 text-right' : 'p-3';
+                        cell.textContent = value == null ? '' : value;
+                        row.appendChild(cell);
+                    });
+                if (canDeleteSales) {
+                    const actionsCell = document.createElement('td');
+                    actionsCell.className = 'p-3 text-right';
+                    const deleteButton = document.createElement('button');
+                    deleteButton.type = 'button';
+                    deleteButton.className = 'rounded-lg bg-rose-500/10 px-2 py-1 text-rose-400 hover:bg-rose-500/20';
+                    deleteButton.textContent = 'Borrar';
+                    deleteButton.addEventListener('click', () => deleteSale(saleIndex));
+                    actionsCell.appendChild(deleteButton);
+                    row.appendChild(actionsCell);
+                }
+                tbody.appendChild(row);
+            });
+        }
+
+        function deleteSale(index) {
+            if (!requireAdminPermission()) return;
+            if (!Number.isInteger(index) || index < 0 || index >= db.sales.length) return;
+            if (!confirm('¿Seguro que deseas borrar este cobro? Esta acción no se puede deshacer.')) return;
+
+            db.sales.splice(index, 1);
+            saveDB();
+            renderSales();
+            updateCajaStats();
+        }
+
+        function renderUsers() {
+            const list = document.getElementById('usersList');
+            list.innerHTML = '';
+            db.users.forEach((user, index) => {
+                if (!user) return;
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-xs';
+                const details = document.createElement('div');
+                details.className = 'flex min-w-0 flex-col';
+                const username = document.createElement('span');
+                username.className = 'font-semibold text-white';
+                username.textContent = user.user || '';
+                const role = document.createElement('span');
+                role.className = 'text-slate-400';
+                role.textContent = getRoleLabel(user.role);
+                details.append(username, role);
+                row.appendChild(details);
+                const isCurrentUser = currentUser && user.user.toLowerCase() === currentUser.user.toLowerCase();
+                if (isAdminUser() && !isCurrentUser) {
+                    const actions = document.createElement('div');
+                    actions.className = 'ml-3 flex shrink-0 gap-2';
+                    const editButton = document.createElement('button');
+                    editButton.type = 'button';
+                    editButton.className = 'rounded-lg bg-cyan-500/10 px-2 py-1 text-cyan-400 hover:bg-cyan-500/20';
+                    editButton.textContent = 'Editar';
+                    editButton.setAttribute('aria-label', `Editar usuario ${user.user || ''}`);
+                    editButton.addEventListener('click', () => editUser(index));
+                    actions.appendChild(editButton);
+                    const deleteButton = document.createElement('button');
+                    deleteButton.type = 'button';
+                    deleteButton.className = 'rounded-lg bg-rose-500/10 px-2 py-1 text-rose-400 hover:bg-rose-500/20';
+                    deleteButton.textContent = 'Borrar';
+                    deleteButton.setAttribute('aria-label', `Borrar usuario ${user.user || ''}`);
+                    deleteButton.addEventListener('click', () => deleteUser(index));
+                    actions.appendChild(deleteButton);
+                    row.appendChild(actions);
+                }
+                list.appendChild(row);
+            });
+        }
+
+        function deleteUser(index) {
+            if (!requireAdminPermission()) return;
+            if (!Number.isInteger(index) || index < 0 || index >= db.users.length) return;
+            const user = db.users[index];
+            if (!user) return;
+            if (currentUser && user.user.toLowerCase() === currentUser.user.toLowerCase()) {
+                alert('No puedes borrar el usuario con el que iniciaste sesión.');
+                return;
+            }
+            if (isAdminUser(user) && db.users.filter(account => account && isAdminUser(account)).length <= 1) {
+                alert('No se puede borrar el último usuario Admin.');
+                return;
+            }
+            if (!confirm(`¿Seguro que deseas borrar el usuario "${user.user}"? Esta acción no se puede deshacer.`)) return;
+
+            db.users.splice(index, 1);
+            saveDB();
+            renderUsers();
+        }
+
+        function loadSettingsForm() {
+            document.getElementById('cfgPriceHour').value = db.settings.priceHour;
+            document.getElementById('cfgMinPrice').value = db.settings.minPrice;
+        }
+
+        function updateCajaStats() {
+            const todaysSales = getSalesForDate(getBusinessDateKey());
+            const internetTotal = todaysSales.reduce((sum, sale) => sum + (Number(sale.internetAmount) || 0), 0);
+            const cafeteriaTotal = todaysSales.reduce((sum, sale) => sum + (Number(sale.cafeteriaAmount) || 0), 0);
+            const total = todaysSales.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0);
+            document.getElementById('statInternet').textContent = `S/ ${internetTotal.toFixed(2)}`;
+            document.getElementById('statCafeteria').textContent = `S/ ${cafeteriaTotal.toFixed(2)}`;
+            document.getElementById('statTotal').textContent = `S/ ${total.toFixed(2)}`;
+        }
+
+        function saveSettings() {
+            if (!requireAdminPermission()) return;
+            const priceHour = Number(document.getElementById('cfgPriceHour').value);
+            const minPrice = Number(document.getElementById('cfgMinPrice').value);
+            if (!Number.isFinite(priceHour) || priceHour < 0 || !Number.isFinite(minPrice) || minPrice < 0) {
+                alert('Ingresa tarifas válidas mayores o iguales a cero.');
+                return;
+            }
+
+            db.settings.priceHour = priceHour;
+            db.settings.minPrice = minPrice;
+            saveDB();
+            renderCabinas();
+            alert('Configuración guardada correctamente.');
+        }
+
+        function openProductModal() {
+            if (!requireAdminPermission()) return;
+            pendingProductImage = '';
+            document.getElementById('prodModalTitle').textContent = 'Nuevo Producto';
+            document.getElementById('editProdId').value = '';
+            document.getElementById('prodName').value = '';
+            document.getElementById('prodCategory').value = 'Cafetería';
+            document.getElementById('prodPrice').value = '';
+            document.getElementById('prodStock').value = '';
+            document.getElementById('prodImageInput').value = '';
+            renderProductImagePreview();
+            document.getElementById('productModal').classList.remove('hidden');
+        }
+
+        function closeProductModal() {
+            document.getElementById('productModal').classList.add('hidden');
+            pendingProductImage = '';
+            document.getElementById('prodImageInput').value = '';
+            renderProductImagePreview();
+        }
+
+        function editProduct(id) {
+            if (!requireAdminPermission()) return;
+            const product = db.products.find(item => item.id === id);
+            if (!product) return;
+            pendingProductImage = typeof product.image === 'string' ? product.image : '';
+            document.getElementById('prodModalTitle').textContent = 'Editar Producto';
+            document.getElementById('editProdId').value = product.id;
+            document.getElementById('prodName').value = product.name;
+            document.getElementById('prodCategory').value = product.category;
+            document.getElementById('prodPrice').value = product.price;
+            document.getElementById('prodStock').value = product.stock;
+            document.getElementById('prodImageInput').value = '';
+            renderProductImagePreview();
+            document.getElementById('productModal').classList.remove('hidden');
+        }
+
+        function compressProductImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(reader.error || new Error('No se pudo leer la imagen.'));
+                reader.onload = () => {
+                    if (typeof reader.result !== 'string') {
+                        reject(new Error('El archivo seleccionado no es una imagen válida.'));
+                        return;
+                    }
+                    const image = new Image();
+                    image.onerror = () => reject(new Error('El navegador no pudo abrir esta imagen.'));
+                    image.onload = () => {
+                        const maxDimension = 640;
+                        const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+                        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+                        const context = canvas.getContext('2d');
+                        if (!context) {
+                            reject(new Error('No se pudo preparar la imagen en este navegador.'));
+                            return;
+                        }
+                        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+                        try {
+                            resolve(canvas.toDataURL('image/jpeg', 0.78));
+                        } catch (error) {
+                            reject(error);
+                        }
+                    };
+                    image.src = reader.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function handleProductImage(event) {
+            if (!requireAdminPermission()) {
+                event.target.value = '';
+                return;
+            }
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                alert('Selecciona un archivo de imagen válido.');
+                event.target.value = '';
+                return;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                alert('La imagen debe pesar 10 MB o menos.');
+                event.target.value = '';
+                return;
+            }
+
+            try {
+                pendingProductImage = await compressProductImage(file);
+                renderProductImagePreview();
+            } catch (error) {
+                console.error('No se pudo procesar la foto del producto.', error);
+                alert('No se pudo procesar esta imagen. Prueba con una foto JPG o PNG.');
+                event.target.value = '';
+            }
+        }
+
+        function renderProductImagePreview() {
+            const container = document.getElementById('prodImagePreviewContainer');
+            const preview = document.getElementById('prodImagePreview');
+            if (pendingProductImage) {
+                preview.src = pendingProductImage;
+                container.classList.remove('hidden');
+            } else {
+                preview.removeAttribute('src');
+                container.classList.add('hidden');
+            }
+        }
+
+        function removeProductImage() {
+            if (!requireAdminPermission()) return;
+            pendingProductImage = '';
+            document.getElementById('prodImageInput').value = '';
+            renderProductImagePreview();
+        }
+
+        function saveProduct() {
+            if (!requireAdminPermission()) return;
+            const id = document.getElementById('editProdId').value;
+            const name = document.getElementById('prodName').value.trim();
+            const category = document.getElementById('prodCategory').value;
+            const price = Number(document.getElementById('prodPrice').value);
+            const stock = Number(document.getElementById('prodStock').value);
+            if (!name || !Number.isFinite(price) || price < 0 || !Number.isInteger(stock) || stock < 0) {
+                alert('Ingresa nombre, precio válido y stock entero mayor o igual a cero.');
+                return;
+            }
+
+            const originalProducts = db.products.map(product => ({ ...product }));
+            const productData = { name, category, price, stock, image: pendingProductImage || null };
+            if (id) {
+                const product = db.products.find(item => item.id === Number(id));
+                if (!product) return;
+                Object.assign(product, productData);
+            } else {
+                const newId = db.products.length ? Math.max(...db.products.map(item => item.id)) + 1 : 1;
+                db.products.push({ id: newId, ...productData });
+            }
+
+            try {
+                saveDB();
+            } catch (error) {
+                db.products = originalProducts;
+                console.error('No se pudo guardar el producto y su foto.', error);
+                alert('No se pudo guardar el producto. Libera espacio del navegador e inténtalo de nuevo.');
+                return;
+            }
+            closeProductModal();
+            renderProducts();
+        }
+
+        function openAddSnackModal(pcId) {
+            const pc = db.pcs.find(item => item.id === pcId);
+            if (!pc) return;
+            const available = db.products.filter(product => product.stock > 0);
+            if (!available.length) {
+                alert('No hay productos con stock disponible.');
+                return;
+            }
+
+            const options = available.map((product, index) =>
+                `${index + 1}. ${product.name} - S/ ${Number(product.price).toFixed(2)} (stock ${product.stock})`
+            ).join('\n');
+            const selection = prompt(`Escribe el número del producto:\n${options}`, '1');
+            if (selection === null) return;
+            const product = available[Number(selection) - 1];
+            if (!product) {
+                alert('Selecciona un número de producto válido.');
+                return;
+            }
+
+            const quantity = Number(prompt(`Cantidad de ${product.name}:`, '1'));
+            if (!Number.isInteger(quantity) || quantity < 1 || quantity > product.stock) {
+                alert('Ingresa una cantidad válida que no supere el stock disponible.');
+                return;
+            }
+
+            pc.consumption = pc.consumption || [];
+            const existing = pc.consumption.find(item => item.id === product.id);
+            if (existing) existing.qty += quantity;
+            else pc.consumption.push({ id: product.id, name: product.name, price: product.price, qty: quantity });
+            product.stock -= quantity;
+            saveDB();
+            renderCabinas();
+            renderProducts();
+        }
+
+        function checkoutCart() {
+            if (!db.cart.length) {
+                alert('El carrito está vacío.');
+                return;
+            }
+
+            const target = document.getElementById('cartTargetPC').value;
+            const targetPC = target === 'direct' ? null : db.pcs.find(pc => pc.id === Number(target));
+            const total = db.cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+            if (targetPC) {
+                targetPC.consumption = targetPC.consumption || [];
+                db.cart.forEach(item => {
+                    const product = db.products.find(entry => entry.id === item.id);
+                    if (product) product.stock = Math.max(0, product.stock - item.qty);
+                    const existing = targetPC.consumption.find(entry => entry.id === item.id);
+                    if (existing) existing.qty += item.qty;
+                    else targetPC.consumption.push({ id: item.id, name: item.name, price: item.price, qty: item.qty });
+                });
+                db.cart = [];
+                saveDB();
+                renderCart();
+                renderCabinas();
+                renderProducts();
+                renderCartSelect();
+                alert('Consumos cargados correctamente a la cabina.');
+                return;
+            }
+
+            activeCheckoutPC = null;
+            activeCheckoutType = 'direct';
+            pendingDirectCheckout = { total };
+            document.getElementById('checkoutTitle').textContent = 'Cobrar Venta Mostrador';
+            document.getElementById('checkoutDetails').innerHTML = `
+                <div class="flex justify-between text-sm font-bold text-white">
+                    <span>Total a pagar:</span>
+                    <span class="text-cyan-400">S/ ${total.toFixed(2)}</span>
+                </div>
+            `;
+            openCheckoutPayment(total);
+        }
+
+        function exportJSON() {
+            if (!requireAdminPermission()) return;
+            const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'spirit-lan-center-backup.json';
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importJSON(event) {
+            if (!requireAdminPermission()) {
+                event.target.value = '';
+                return;
+            }
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const imported = JSON.parse(reader.result);
+                    if (!imported || typeof imported !== 'object' || Array.isArray(imported)) {
+                        throw new Error('El archivo no contiene un respaldo válido.');
+                    }
+                    db = {
+                        ...db,
+                        ...imported,
+                        settings: { ...db.settings, ...(imported.settings || {}) },
+                        users: Array.isArray(imported.users) && imported.users.length ? imported.users : db.users,
+                        pcs: Array.isArray(imported.pcs) ? imported.pcs : db.pcs,
+                        products: Array.isArray(imported.products) ? imported.products : db.products,
+                        cart: Array.isArray(imported.cart) ? imported.cart : db.cart,
+                        sales: Array.isArray(imported.sales) ? imported.sales : db.sales,
+                        cashClosures: Array.isArray(imported.cashClosures) ? imported.cashClosures : db.cashClosures
+                    };
+                    saveDB();
+                    initApp();
+                    alert('Respaldo importado correctamente.');
+                } catch (error) {
+                    console.error('No se pudo importar el respaldo.', error);
+                    alert('El archivo seleccionado no es un respaldo válido.');
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function openUserModal() {
+            if (!requireAdminPermission()) return;
+            editingUserIndex = null;
+            document.getElementById('userForm').reset();
+            setUserPasswordVisibility(false);
+            document.getElementById('newUserRole').value = 'Trabajador';
+            document.getElementById('newUserRoleContainer').classList.remove('hidden');
+            document.getElementById('userModalTitle').textContent = 'Agregar Usuario';
+            document.getElementById('saveUserButton').textContent = 'Crear Usuario';
+            document.getElementById('userModal').classList.remove('hidden');
+            document.getElementById('newUserName').focus();
+        }
+
+        function editUser(index) {
+            if (!requireAdminPermission()) return;
+            if (!Number.isInteger(index) || index < 0 || index >= db.users.length) return;
+            const user = db.users[index];
+            if (!user) return;
+            if (currentUser && user.user.toLowerCase() === currentUser.user.toLowerCase()) {
+                alert('No puedes editar el usuario con el que iniciaste sesión.');
+                return;
+            }
+
+            editingUserIndex = index;
+            document.getElementById('userForm').reset();
+            setUserPasswordVisibility(false);
+            document.getElementById('newUserName').value = user.user;
+            document.getElementById('newUserPassword').value = user.pass;
+            document.getElementById('newUserRole').value = user.role;
+            document.getElementById('newUserRoleContainer').classList.add('hidden');
+            document.getElementById('userModalTitle').textContent = `Editar usuario ${user.user}`;
+            document.getElementById('saveUserButton').textContent = 'Guardar Cambios';
+            document.getElementById('userModal').classList.remove('hidden');
+            document.getElementById('newUserName').focus();
+        }
+
+        function closeUserModal() {
+            document.getElementById('userModal').classList.add('hidden');
+            editingUserIndex = null;
+            setUserPasswordVisibility(false);
+            document.getElementById('newUserRoleContainer').classList.remove('hidden');
+        }
+
+        function setUserPasswordVisibility(isVisible) {
+            const passwordInput = document.getElementById('newUserPassword');
+            const toggleButton = document.getElementById('toggleUserPassword');
+            passwordInput.type = isVisible ? 'text' : 'password';
+            toggleButton.textContent = isVisible ? 'Ocultar' : 'Mostrar';
+            toggleButton.setAttribute('aria-pressed', String(isVisible));
+            toggleButton.setAttribute('aria-label', `${isVisible ? 'Ocultar' : 'Mostrar'} contraseña`);
+        }
+
+        function toggleUserPasswordVisibility() {
+            const passwordInput = document.getElementById('newUserPassword');
+            setUserPasswordVisibility(passwordInput.type === 'password');
+        }
+
+        function saveUser(event) {
+            event.preventDefault();
+            if (!requireAdminPermission()) return;
+            const isEditing = editingUserIndex !== null;
+            const existingUser = isEditing ? db.users[editingUserIndex] : null;
+            const username = document.getElementById('newUserName').value.trim();
+            const password = document.getElementById('newUserPassword').value;
+            const role = document.getElementById('newUserRole').value;
+            if (!username || !password || (!isEditing && !['Administrador', 'Trabajador'].includes(role))) {
+                alert('Completa los datos y selecciona Admin o Trabajador.');
+                return;
+            }
+            if (isEditing && (!existingUser ||
+                (currentUser && existingUser.user.toLowerCase() === currentUser.user.toLowerCase()))) {
+                alert('No puedes editar ese usuario.');
+                closeUserModal();
+                return;
+            }
+            if (db.users.some((user, index) => user && index !== editingUserIndex &&
+                user.user.toLowerCase() === username.toLowerCase())) {
+                alert('Ese nombre de usuario ya existe.');
+                return;
+            }
+
+            if (isEditing) {
+                existingUser.user = username;
+                existingUser.pass = password;
+            } else {
+                db.users.push({ user: username, pass: password, role });
+            }
+            saveDB();
+            renderUsers();
+            closeUserModal();
+        }
+    </script>
+    </body>
+</html>
